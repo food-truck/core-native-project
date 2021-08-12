@@ -1,13 +1,13 @@
 {
-    "name": "core-native",
-    "version": "2.6.1",
+    "name": "@wonder/core-native",
+    "version": "1.0.0",
     "main": "lib/index.js",
     "module": "lib/index.js",
     "types": "lib/index.d.ts",
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/dionshihk/core-native-framework"
+        "url": "https://github.com/food-truck/core-native-project"
     },
     "scripts": {
         "build": "node script/build.js",

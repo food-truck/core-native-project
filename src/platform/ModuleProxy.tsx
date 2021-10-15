@@ -134,7 +134,9 @@ export class ModuleProxy<M extends Module<any, any>> {
                     const boundTicker = lifecycleListener.onTick.bind(lifecycleListener);
                     const tickActionName = `${moduleName}/@@TICK`;
                     while (true) {
-                        yield rawCall(executeAction, tickActionName, boundTicker);
+                        if (this.state.appState === "active") {
+                            yield rawCall(executeAction, tickActionName, boundTicker);
+                        }
                         this.tickCount++;
                         yield delay(tickIntervalInMillisecond);
                     }

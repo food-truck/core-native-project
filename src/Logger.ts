@@ -187,7 +187,7 @@ export class LoggerImpl implements Logger {
             info,
             stats,
             errorCode: "errorCode" in entry ? entry.errorCode : undefined,
-            errorMessage: "errorMessage" in entry ? entry.errorMessage.substr(0, 1000) : undefined,
+            errorMessage: "errorMessage" in entry ? (entry.errorMessage ? entry.errorMessage.substr(0, 1000) : undefined) : undefined,
         };
         this.logQueue.push(event);
     }

@@ -2,6 +2,7 @@ import {loggerContext} from "./platform/logger-context";
 import {errorToException} from "./util/error-util";
 import {app} from "./app";
 import {APIException, Exception, JavaScriptException, NetworkConnectionException} from "./Exception";
+import {stringifyWithMask} from "./util/json-util";
 
 interface Log {
     date: Date;
@@ -115,7 +116,7 @@ export class LoggerImpl implements Logger {
         } else if (exception instanceof JavaScriptException) {
             isWarning = false;
             errorCode = "JAVASCRIPT_ERROR";
-            info["app_state"] = JSON.stringify(app.store.getState().app);
+            info["app_state"] = stringifyWithMask(app.loggerConfig?.maskedKeywords || [], "***", app.store.getState().app);
         } else {
             console.warn("[framework] Exception class should not be extended, throw Error instead");
             isWarning = false;

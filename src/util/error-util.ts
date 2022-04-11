@@ -48,14 +48,16 @@ export function captureError(error: unknown, action: string, extra: ErrorExtra =
     };
 
     app.logger.exception(exception, info, action);
-    app.sagaMiddleware.run(runUserErrorHandler, app.errorHandler, exception);
+    app.sagaMiddleware.run(runUserErrorHandler, app.errorHandler, exception, action);
 
     return exception;
 }
 
-export function* runUserErrorHandler(handler: ErrorHandler, exception: Exception) {
-    // For app, report errors to event server ASAP, in case of sudden termination
-    yield spawn(sendEventLogs);
+export function* runUserErrorHandler(handler: ErrorHandler, exception: Exception, action: string) {
+    // For app, report errors to event server ASAP, in case of sudden termination, only when captured in error-boundary
+    if ("@@framework/error-boundary" === action) {
+        yield spawn(sendEventLogs);
+    }
     if (errorHandlerRunning) return;
 
     try {

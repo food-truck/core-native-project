@@ -19,6 +19,7 @@ interface BootstrapOption {
 }
 
 const LOGGER_ACTION = "@@framework/logger";
+let APP_FOCUSED = false;
 
 export function startApp(config: BootstrapOption) {
     setupGlobalErrorHandler(config.errorListener);
@@ -34,10 +35,13 @@ function setupGlobalErrorHandler(errorListener: ErrorListener) {
 function renderRoot(registeredAppName: string, EntryComponent: React.ComponentType, beforeRendering?: () => Promise<any>) {
     class WrappedAppComponent extends React.PureComponent<{}, {initialized: boolean; appState: AppStateStatus}> {
         private appStateListener: NativeEventSubscription | undefined;
+        private appFocusListener: NativeEventSubscription | undefined;
+        private appBlurListener: NativeEventSubscription | undefined;
 
         constructor(props: {}) {
             super(props);
             this.state = {initialized: false, appState: AppState.currentState};
+            APP_FOCUSED = true;
         }
 
         override async componentDidMount() {
@@ -46,21 +50,36 @@ function renderRoot(registeredAppName: string, EntryComponent: React.ComponentTy
             }
             this.setState({initialized: true});
             this.appStateListener = AppState.addEventListener("change", this.onAppStateChange);
+            this.appBlurListener = AppState.addEventListener("blur", this.onAppBlur);
+            this.appFocusListener = AppState.addEventListener("focus", this.onAppFocus);
         }
 
         override componentWillUnmount() {
             this.appStateListener?.remove();
+            this.appFocusListener?.remove();
+            this.appBlurListener?.remove();
         }
 
         onAppStateChange = (nextAppState: AppStateStatus) => {
             const {appState} = this.state;
             if (["inactive", "background"].includes(appState) && nextAppState === "active") {
                 app.logger.info({action: "@@ACTIVE", info: {prevState: appState}});
+                APP_FOCUSED = true;
             } else if (appState === "active" && ["inactive", "background"].includes(nextAppState)) {
                 app.logger.info({action: "@@INACTIVE", info: {nextState: nextAppState}});
-                sendEventLogs();
+                sendEventLogs(true);
+                APP_FOCUSED = false;
             }
             this.setState({appState: nextAppState});
+        };
+
+        // only work in Android, to solve logs sent issue when screen locked
+        onAppFocus = () => {
+            APP_FOCUSED = true;
+        };
+        // only work in Android, to solve logs sent issue when screen locked
+        onAppBlur = () => {
+            APP_FOCUSED = false;
         };
 
         override render() {
@@ -92,8 +111,8 @@ function runBackgroundLoop(loggerConfig: LoggerConfig | undefined) {
     });
 }
 
-export async function sendEventLogs(): Promise<void> {
-    if (app.loggerConfig) {
+export async function sendEventLogs(force?: boolean): Promise<void> {
+    if (app.loggerConfig && (APP_FOCUSED || force)) {
         const logs = app.logger.collect(200);
         const logLength = logs.length;
         if (logLength > 0) {

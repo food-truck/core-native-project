@@ -163,8 +163,8 @@ export class LoggerImpl implements Logger {
         if (entry.info) {
             Object.entries(entry.info).map(([key, value]) => {
                 if (value !== undefined) {
-                    const isBuiltinInfo = ["app_state", "stacktrace", "extra_stacktrace"].includes(key);
-                    info[key] = isBuiltinInfo ? value.substr(0, 500000) : value.substr(0, 500);
+                    const isBuiltinInfo = ["app_state"].includes(key);
+                    info[key] = isBuiltinInfo ? value.substring(0, 500000) : value.substring(0, 500);
                 }
             });
         }

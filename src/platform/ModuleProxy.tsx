@@ -1,5 +1,5 @@
 import React from "react";
-import {AppState, AppStateStatus} from "react-native";
+import {AppState, AppStateStatus, NativeEventSubscription} from "react-native";
 import {Task} from "redux-saga";
 import {delay, call as rawCall} from "redux-saga/effects";
 import {app} from "../app";
@@ -29,6 +29,7 @@ export class ModuleProxy<M extends Module<any, any>> {
             private unsubscribeBlur: (() => void) | undefined;
             private tickCount: number = 0;
             private mountedTime: number = Date.now();
+            private stateChangeSubscription: NativeEventSubscription | null = null;
 
             constructor(props: P) {
                 super(props);
@@ -40,7 +41,7 @@ export class ModuleProxy<M extends Module<any, any>> {
 
                 // According to the document, this API may change soon
                 // Ref: https://facebook.github.io/react-native/docs/appstate#addeventlistener
-                AppState.addEventListener("change", this.onAppStateChange);
+                this.stateChangeSubscription = AppState.addEventListener("change", this.onAppStateChange);
 
                 const props: any = this.props;
                 if ("navigation" in props && typeof props.navigation.addListener === "function") {
@@ -78,7 +79,7 @@ export class ModuleProxy<M extends Module<any, any>> {
 
                 this.unsubscribeFocus?.();
                 this.unsubscribeBlur?.();
-                AppState.removeEventListener("change", this.onAppStateChange);
+                this.stateChangeSubscription?.remove();
             }
 
             onAppStateChange = (nextAppState: AppStateStatus) => {

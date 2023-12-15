@@ -1,13 +1,16 @@
 import React from "react";
-import {AppState, AppStateStatus, NativeEventSubscription} from "react-native";
-import {Task} from "redux-saga";
+import {AppState, type AppStateStatus, type NativeEventSubscription} from "react-native";
+import {type Task} from "redux-saga";
 import {delay, call as rawCall} from "redux-saga/effects";
 import {app} from "../app";
-import {ActionCreators, executeAction} from "../module";
-import {Module, ModuleLifecycleListener} from "./Module";
+import {type ActionCreators, executeAction} from "../module";
+import {Module, type ModuleLifecycleListener} from "./Module";
 
 export class ModuleProxy<M extends Module<any, any>> {
-    constructor(private module: M, private actions: ActionCreators<M>) {}
+    constructor(
+        private module: M,
+        private actions: ActionCreators<M>
+    ) {}
 
     getActions(): ActionCreators<M> {
         return this.actions;
@@ -27,9 +30,9 @@ export class ModuleProxy<M extends Module<any, any>> {
             private lifecycleSagaTask: Task | null = null;
             private unsubscribeFocus: (() => void) | undefined;
             private unsubscribeBlur: (() => void) | undefined;
+            private unsubscribeAppStateChange: NativeEventSubscription | undefined;
             private tickCount: number = 0;
             private mountedTime: number = Date.now();
-            private stateChangeSubscription: NativeEventSubscription | null = null;
 
             constructor(props: P) {
                 super(props);
@@ -41,7 +44,7 @@ export class ModuleProxy<M extends Module<any, any>> {
 
                 // According to the document, this API may change soon
                 // Ref: https://facebook.github.io/react-native/docs/appstate#addeventlistener
-                this.stateChangeSubscription = AppState.addEventListener("change", this.onAppStateChange);
+                this.unsubscribeAppStateChange = AppState.addEventListener("change", this.onAppStateChange);
 
                 const props: any = this.props;
                 if ("navigation" in props && typeof props.navigation.addListener === "function") {
@@ -79,7 +82,7 @@ export class ModuleProxy<M extends Module<any, any>> {
 
                 this.unsubscribeFocus?.();
                 this.unsubscribeBlur?.();
-                this.stateChangeSubscription?.remove();
+                this.unsubscribeAppStateChange?.remove();
             }
 
             onAppStateChange = (nextAppState: AppStateStatus) => {

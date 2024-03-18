@@ -1,10 +1,16 @@
+import "react-native-get-random-values";
+import {v4} from "uuid";
 import {loggerContext} from "./platform/logger-context";
+import type {PersistInstance} from "./util/LogPersistUtil";
 import {errorToException} from "./util/error-util";
 import {app} from "./app";
 import {APIException, Exception, JavaScriptException, NetworkConnectionException} from "./Exception";
 import {stringifyWithMask} from "./util/json-util";
 
-interface Log {
+const OUTDATED_TIME_MILLISECONDS = 7 * 24 * 60 * 60 * 1000; // logs before 7 days is outdated
+
+export interface Log {
+    _id: string;
     date: Date;
     action: string;
     result: "OK" | "WARN" | "ERROR";
@@ -34,12 +40,23 @@ interface ErrorLogEntry extends InfoLogEntry {
  *
  * The request will be PUT to the server in the following format:
  *      {events: Log[]}
+ *
+ * @param persist enable log persistence
+ * @param customPersistInstance use customized tool to persist logs, MMKV is the default solution
  */
-export interface LoggerConfig {
+
+type PersistConfig =
+    | {persist?: false; customPersistInstance?: never}
+    | {
+          persist: true;
+          customPersistInstance?: PersistInstance;
+      };
+
+export type LoggerConfig = PersistConfig & {
     serverURL: string;
     slowStartupThreshold?: number; // In second, default: 5
     maskedKeywords?: RegExp[];
-}
+};
 
 export interface Logger {
     addContext(context: {[key: string]: string | (() => string)}): void;
@@ -53,9 +70,21 @@ export class LoggerImpl implements Logger {
     private contextMap: {[key: string]: string | (() => string)} = {};
     private logQueue: Log[] = [];
     private collectPosition = 0;
+    private persistInstance: PersistInstance | undefined;
 
     constructor() {
         this.contextMap = loggerContext;
+    }
+
+    persist(persistInstance: PersistInstance) {
+        this.persistInstance = persistInstance;
+        const persistedLogs = this.persistInstance.recover();
+        this.logQueue.forEach(log => this.persistInstance?.onCreate(log));
+        this.logQueue = this.logQueue.concat(persistedLogs);
+    }
+
+    countPersisted() {
+        return this.persistInstance?.count();
     }
 
     addContext(context: {[key: string]: string | (() => string)}): void {
@@ -138,7 +167,25 @@ export class LoggerImpl implements Logger {
     }
 
     emptyLastCollection(): void {
+        if (this.persistInstance) {
+            const logsToClear = this.logQueue.slice(0, this.collectPosition);
+            this.persistInstance.onDelete(logsToClear.map(log => log._id));
+        }
+
         this.logQueue = this.logQueue.slice(this.collectPosition);
+    }
+
+    clearOutdatedLogs(logs: Log[]): void {
+        if (this.persistInstance) {
+            const outdatedDate = Date.now() - OUTDATED_TIME_MILLISECONDS;
+            this.persistInstance.onDelete(logs.filter(log => log.date.getTime() < outdatedDate).map(log => log._id));
+        }
+    }
+
+    clearAllCache(): void {
+        if (this.persistInstance) {
+            this.persistInstance.clear();
+        }
     }
 
     private createLog(result: "OK" | "WARN" | "ERROR", entry: InfoLogEntry | ErrorLogEntry): void {
@@ -180,6 +227,7 @@ export class LoggerImpl implements Logger {
         }
 
         const event: Log = {
+            _id: v4(),
             date: new Date(),
             action: entry.action,
             elapsedTime: entry.elapsedTime || 0,
@@ -191,5 +239,6 @@ export class LoggerImpl implements Logger {
             errorMessage: "errorMessage" in entry ? (entry.errorMessage ? entry.errorMessage.substring(0, 1000) : undefined) : undefined,
         };
         this.logQueue.push(event);
+        this.persistInstance?.onCreate(event);
     }
 }

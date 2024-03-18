@@ -9,6 +9,7 @@ import {ErrorBoundary} from "../util/ErrorBoundary";
 import {ajax} from "../util/network";
 import {APIException} from "../Exception";
 import {captureError} from "../util/error-util";
+import {PersistInstanceImpl} from "../util/LogPersistUtil";
 
 interface BootstrapOption {
     registeredAppName: string;
@@ -80,7 +81,11 @@ function renderRoot(registeredAppName: string, EntryComponent: React.ComponentTy
 
 function runBackgroundLoop(loggerConfig: LoggerConfig | undefined) {
     app.logger.info({action: "@@ENTER"});
+    if (loggerConfig?.persist) {
+        app.logger.persist(loggerConfig.customPersistInstance ?? new PersistInstanceImpl());
+    }
     app.loggerConfig = loggerConfig || null;
+
     app.sagaMiddleware.run(function* () {
         while (true) {
             // Loop on every 15 second

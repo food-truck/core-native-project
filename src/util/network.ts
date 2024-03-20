@@ -11,8 +11,13 @@
  * https://stackoverflow.com/questions/37897523/axios-get-access-to-response-header-fields
  */
 
+import {app} from "../app";
 import {APIException, NetworkConnectionException} from "../Exception";
 import {parseWithDate} from "./json-util";
+import networkConfig from "./networkConfig";
+import {v4 as uuidv4} from "uuid";
+
+const REQUEST_ID = "x-request-id";
 
 export type PathParams<T extends string> = string extends T
     ? {[key: string]: string | number}
@@ -44,6 +49,10 @@ export function setResponseHeaderInterceptor(_: ResponseHeaderInterceptor) {
 
 export async function ajax<Request, Response, Path extends string>(method: Method, path: Path, pathParams: PathParams<Path>, request: Request, skipInterceptor: boolean = false): Promise<Response> {
     let requestURL = urlParams(path, pathParams);
+    const fullURL = urlParams(path, pathParams);
+    const action = `api:${method}:${fullURL}`;
+    const requestId = uuidv4();
+    const startTime = Date.now();
     const requestHeaders: Headers = new Headers({
         "Content-Type": "application/json",
         Accept: "application/json",
@@ -72,6 +81,20 @@ export async function ajax<Request, Response, Path extends string>(method: Metho
         // API response may be void, in such case, JSON.parse will throw error
         const responseData = responseText ? parseWithDate(responseText) : {};
 
+        if (networkConfig.uploadLog) {
+            const errorCode = responseData.data?.message || responseData.data?.error_code || "";
+            const errorMessage = responseData.data?.errorCode || responseData.data?.error_message || "";
+            app.logger.info({
+                action,
+                elapsedTime: Date.now() - startTime,
+                info: {
+                    ...(errorCode ? {errorCode} : {}),
+                    ...(errorMessage ? {errorMessage} : {}),
+                    [REQUEST_ID]: responseData.config.headers[REQUEST_ID],
+                },
+            });
+        }
+
         if (response.ok) {
             // HTTP Status 200
             return responseData as Response;
@@ -91,6 +114,37 @@ export async function ajax<Request, Response, Path extends string>(method: Metho
             }
         }
     } catch (e) {
+        if (networkConfig.uploadLog) {
+            if (e instanceof APIException) {
+                app.logger.error({
+                    action,
+                    elapsedTime: Date.now() - startTime,
+                    errorCode: e.errorCode || "",
+                    errorMessage: e.message,
+                    info: {
+                        [REQUEST_ID]: requestId,
+                    },
+                });
+            } else if (e instanceof NetworkConnectionException) {
+                app.logger.error({
+                    action,
+                    elapsedTime: Date.now() - startTime,
+                    errorCode: e.originalErrorMessage,
+                    errorMessage: e.message,
+                    info: {[REQUEST_ID]: requestId},
+                });
+            } else {
+                app.logger.error({
+                    action,
+                    elapsedTime: Date.now() - startTime,
+                    errorCode: "UNKNOWN_ERROR",
+                    errorMessage: JSON.stringify(e),
+                    info: {
+                        [REQUEST_ID]: requestId,
+                    },
+                });
+            }
+        }
         // Only APIException, NetworkConnectionException can be thrown
         if (e instanceof APIException || e instanceof NetworkConnectionException) {
             throw e;

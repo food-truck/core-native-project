@@ -56,6 +56,7 @@ export async function ajax<Request, Response, Path extends string>(method: Metho
     const requestHeaders: Headers = new Headers({
         "Content-Type": "application/json",
         Accept: "application/json",
+        [REQUEST_ID]: requestId,
     });
     if (!skipInterceptor) {
         await networkInterceptor.request?.(requestHeaders);

@@ -1,15 +1,15 @@
 import React from "react";
 import {AppRegistry, AppState, type AppStateStatus, type NativeEventSubscription} from "react-native";
-import {Provider} from "react-redux";
 import {app} from "../app";
 import {type LoggerConfig} from "../Logger";
 import {type ErrorListener} from "../module";
-import {call, delay} from "../typed-saga";
 import {ErrorBoundary} from "../util/ErrorBoundary";
 import {ajax} from "../util/network";
 import {APIException} from "../Exception";
 import {captureError} from "../util/error-util";
 import {PersistInstanceImpl} from "../util/LogPersistUtil";
+import {delay} from "../util/taskUtils";
+import {createZustandContext, Provider} from "../ZustandProvider";
 
 interface BootstrapOption {
     registeredAppName: string;
@@ -24,6 +24,7 @@ const LOGGER_ACTION = "@@framework/logger";
 export function startApp(config: BootstrapOption) {
     setupGlobalErrorHandler(config.errorListener);
     runBackgroundLoop(config.loggerConfig);
+    createZustandContext();
     renderRoot(config.registeredAppName, config.componentType, config.beforeRendering);
 }
 
@@ -86,15 +87,15 @@ function runBackgroundLoop(loggerConfig: LoggerConfig | undefined) {
     }
     app.loggerConfig = loggerConfig || null;
 
-    app.sagaMiddleware.run(function* () {
-        while (true) {
-            // Loop on every 15 second
-            yield delay(15000);
-
-            // Send collected log to event server
-            yield* call(sendEventLogs);
+    function runSendEventLogs() {
+        async function loop() {
+            await delay(15 * 1000);
+            await sendEventLogs();
+            requestAnimationFrame(loop);
         }
-    });
+        loop();
+    }
+    runSendEventLogs();
 }
 
 export async function sendEventLogs(): Promise<void> {

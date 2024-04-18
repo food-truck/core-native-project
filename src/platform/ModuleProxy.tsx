@@ -1,10 +1,10 @@
 import React from "react";
 import {AppState, type AppStateStatus, type NativeEventSubscription} from "react-native";
 import {type Task} from "redux-saga";
-import {delay, call as rawCall} from "redux-saga/effects";
 import {app} from "../app";
 import {type ActionCreators, executeAction} from "../module";
 import {Module, type ModuleLifecycleListener} from "./Module";
+import {delay} from "../util/taskUtils";
 
 export class ModuleProxy<M extends Module<any, any>> {
     constructor(
@@ -33,6 +33,7 @@ export class ModuleProxy<M extends Module<any, any>> {
             private unsubscribeAppStateChange: NativeEventSubscription | undefined;
             private tickCount: number = 0;
             private mountedTime: number = Date.now();
+            private timer: number | NodeJS.Timeout = -1;
 
             constructor(props: P) {
                 super(props);
@@ -40,7 +41,7 @@ export class ModuleProxy<M extends Module<any, any>> {
             }
 
             override componentDidMount() {
-                this.lifecycleSagaTask = app.sagaMiddleware.run(this.lifecycleSaga.bind(this));
+                // this.lifecycleSagaTask = app.sagaMiddleware.run(this.lifecycleSaga.bind(this));
 
                 // According to the document, this API may change soon
                 // Ref: https://facebook.github.io/react-native/docs/appstate#addeventlistener
@@ -50,12 +51,14 @@ export class ModuleProxy<M extends Module<any, any>> {
                 if ("navigation" in props && typeof props.navigation.addListener === "function") {
                     if (this.hasOwnLifecycle("onFocus")) {
                         this.unsubscribeFocus = props.navigation.addListener("focus", () => {
-                            app.store.dispatch(actions.onFocus());
+                            // app.store.dispatch(actions.onFocus());
+                            actions.onFocus();
                         });
                     }
                     if (this.hasOwnLifecycle("onBlur")) {
                         this.unsubscribeBlur = props.navigation.addListener("blur", () => {
-                            app.store.dispatch(actions.onBlur());
+                            // app.store.dispatch(actions.onBlur());
+                            actions.onBlur();
                         });
                     }
                 }
@@ -63,7 +66,8 @@ export class ModuleProxy<M extends Module<any, any>> {
 
             override componentWillUnmount() {
                 if (this.hasOwnLifecycle("onDestroy")) {
-                    app.store.dispatch(actions.onDestroy());
+                    // app.store.dispatch(actions.onDestroy());
+                    actions.onDestroy();
                 }
 
                 app.logger.info({
@@ -89,11 +93,13 @@ export class ModuleProxy<M extends Module<any, any>> {
                 const {appState} = this.state;
                 if (["inactive", "background"].includes(appState) && nextAppState === "active") {
                     if (this.hasOwnLifecycle("onAppActive")) {
-                        app.store.dispatch(actions.onAppActive());
+                        // app.store.dispatch(actions.onAppActive());
+                        actions.onAppActive();
                     }
                 } else if (appState === "active" && ["inactive", "background"].includes(nextAppState)) {
                     if (this.hasOwnLifecycle("onAppInactive")) {
-                        app.store.dispatch(actions.onAppInactive());
+                        // app.store.dispatch(actions.onAppInactive());
+                        actions.onAppInactive();
                     }
                 }
                 this.setState({appState: nextAppState});
@@ -107,7 +113,7 @@ export class ModuleProxy<M extends Module<any, any>> {
                 return Object.prototype.hasOwnProperty.call(modulePrototype, methodName);
             };
 
-            private *lifecycleSaga() {
+            private async lifecycleSaga() {
                 /**
                  * CAVEAT:
                  * Do not use <yield* executeAction> for lifecycle actions.
@@ -120,9 +126,17 @@ export class ModuleProxy<M extends Module<any, any>> {
                 const enterActionName = `${moduleName}/@@ENTER`;
                 const startTime = Date.now();
                 if ("navigation" in props) {
-                    yield rawCall(executeAction, enterActionName, lifecycleListener.onEnter.bind(lifecycleListener), props.route?.params || {});
+                    executeAction({
+                        actionName: enterActionName,
+                        handler: lifecycleListener.onEnter.bind(lifecycleListener),
+                        payload: props.route?.params || {},
+                    });
                 } else {
-                    yield rawCall(executeAction, enterActionName, lifecycleListener.onEnter.bind(lifecycleListener), {});
+                    executeAction({
+                        actionName: enterActionName,
+                        handler: lifecycleListener.onEnter.bind(lifecycleListener),
+                        payload: [],
+                    });
                 }
 
                 app.logger.info({
@@ -137,13 +151,32 @@ export class ModuleProxy<M extends Module<any, any>> {
                     const tickIntervalInMillisecond = (lifecycleListener.onTick.tickInterval || 5) * 1000;
                     const boundTicker = lifecycleListener.onTick.bind(lifecycleListener);
                     const tickActionName = `${moduleName}/@@TICK`;
-                    while (true) {
+                    const tickExecute = async () => {
                         if (this.state.appState === "active") {
-                            yield rawCall(executeAction, tickActionName, boundTicker);
+                            // yield rawCall(executeAction, tickActionName, boundTicker);
+                            executeAction({
+                                actionName: tickActionName,
+                                handler: boundTicker,
+                                payload: [],
+                            });
                         }
                         this.tickCount++;
-                        yield delay(tickIntervalInMillisecond);
-                    }
+                    };
+                    tickExecute();
+                    clearInterval(this.timer);
+                    this.timer = setInterval(tickExecute, tickIntervalInMillisecond);
+                    // while (true) {
+                    //     if (this.state.appState === "active") {
+                    //         // yield rawCall(executeAction, tickActionName, boundTicker);
+                    //         executeAction({
+                    //             actionName: tickActionName,
+                    //             handler: boundTicker,
+                    //             payload: [],
+                    //         });
+                    //     }
+                    //     this.tickCount++;
+                    //     await delay(tickIntervalInMillisecond);
+                    // }
                 }
             }
         };

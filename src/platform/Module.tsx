@@ -2,8 +2,8 @@ import {app} from "../app";
 import {type Logger} from "../Logger";
 import {produce, enablePatches} from "immer";
 import {type TickIntervalDecoratorFlag} from "../module";
-import {type State} from "../storeActions";
-import {setAppState} from "../sliceActions";
+import {type State} from "../sliceStores";
+import {setAppState} from "../storeActions";
 
 if (process.env.NODE_ENV === "development") enablePatches();
 

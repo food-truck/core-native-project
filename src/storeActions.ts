@@ -1,46 +1,44 @@
-import {create, type StateCreator, type StoreMutatorIdentifier} from "zustand";
-import {immer} from "zustand/middleware/immer";
-import {devtools, subscribeWithSelector} from "zustand/middleware";
-import * as process from "node:process";
+import {app} from "./app";
 
-export type ImmerStateCreator<T, Mps extends [StoreMutatorIdentifier, unknown][] = [], Mcs extends [StoreMutatorIdentifier, unknown][] = []> = StateCreator<T, [...Mps, ["zustand/immer", never]], Mcs>;
-export interface Slice {}
-
-export interface LoadingSlice extends Slice {
-    loading: {
-        [key: string]: number;
-    };
+// Redux State
+interface LoadingState {
+    [loading: string]: number;
 }
 
-export interface SetStateSlice extends Slice {
+export interface State {
+    loading: LoadingState;
     app: {
-        [module: string]: object;
+        [key: string]: object;
     };
 }
 
-export type State = LoadingSlice & SetStateSlice;
+interface SetStatePayload<T = any> {
+    moduleName: string;
+    state: T;
+}
 
-export const createLoadingSlice: ImmerStateCreator<LoadingSlice> = set => ({
-    loading: {},
-});
-
-export const createSetStateSlice: ImmerStateCreator<SetStateSlice> = set => ({
-    app: {},
-});
-
-export const createRootStore = () =>
-    create<State>()(
-        subscribeWithSelector(
-            immer(
-                devtools(
-                    (...a) => ({
-                        ...createLoadingSlice(...a),
-                        ...createSetStateSlice(...a),
-                    }),
-                    {
-                        enabled: process.env.NODE_ENV === "development",
-                    }
-                )
-            )
-        )
+export const setAppState = <T extends object>(payload: SetStatePayload<T>, actionName?: string) => {
+    app.store.setState(
+        draft => {
+            draft.app[payload.moduleName] = payload.state;
+        },
+        false,
+        actionName || "@@framework/setState"
     );
+};
+
+interface LoadingActionPayload {
+    identifier: string;
+    show: boolean;
+}
+
+export const setLoadingState = (payload: LoadingActionPayload) => {
+    app.store.setState(
+        draft => {
+            const count = draft.loading[payload.identifier] || 0;
+            draft.loading[payload.identifier] = count + (payload.show ? 1 : -1);
+        },
+        false,
+        "@@framework/loading"
+    );
+};

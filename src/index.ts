@@ -15,5 +15,5 @@ export {useLoadingStatus, useSelector} from "./hooks";
 export {logger} from "./app";
 
 export {useStore} from "zustand";
-export * from "./storeActions";
+export * from "./sliceStores";
 export {produce} from "immer";

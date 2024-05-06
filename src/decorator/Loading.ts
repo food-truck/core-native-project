@@ -1,17 +1,22 @@
-import {createActionHandlerDecorator} from "./index";
-import {put} from "redux-saga/effects";
-import {loadingAction} from "../reducer";
+import {createActionHandlerDecorator, type ActionHandlerWithMetaData} from "./index";
+import {setLoadingState} from "../storeActions";
 
 /**
  * To mark state.loading[identifier] during action execution.
  */
-export function Loading(identifier: string = "global") {
-    return createActionHandlerDecorator(function* (handler) {
+export function Loading<ReturnType>(identifier: string = "global") {
+    return createActionHandlerDecorator(async function (handler: ActionHandlerWithMetaData<ReturnType>) {
+        setLoadingState({
+            identifier,
+            show: true,
+        });
         try {
-            yield put(loadingAction(true, identifier));
-            yield* handler();
+            return await handler();
         } finally {
-            yield put(loadingAction(false, identifier));
+            setLoadingState({
+                identifier,
+                show: false,
+            });
         }
     });
 }

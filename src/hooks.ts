@@ -1,5 +1,5 @@
 import {useContext} from "react";
-import {type State} from "./storeActions";
+import {type State} from "./sliceStores";
 import {ZustandContext} from "./ZustandProvider";
 
 export const useSelector = (selector: (state: State) => any) => {

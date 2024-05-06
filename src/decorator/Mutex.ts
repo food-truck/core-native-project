@@ -1,12 +1,12 @@
-import {createActionHandlerDecorator} from "./index";
+import {createActionHandlerDecorator, type ActionHandlerWithMetaData} from "./index";
 
 /**
  * If specified, the action cannot be entered by other sagas during execution.
  * For error handler action, mutex logic is auto added.
  */
-export function Mutex() {
+export function Mutex<ReturnType>() {
     let lockTime: number | null = null;
-    return createActionHandlerDecorator(function* (handler, thisModule) {
+    return createActionHandlerDecorator(async function (handler: ActionHandlerWithMetaData<ReturnType | void>, thisModule) {
         if (lockTime) {
             thisModule.logger.info({
                 action: handler.actionName,
@@ -18,7 +18,7 @@ export function Mutex() {
         } else {
             try {
                 lockTime = Date.now();
-                yield* handler();
+                return await handler();
             } finally {
                 lockTime = null;
             }

@@ -1,4 +1,4 @@
-import {createActionHandlerDecorator, type ActionHandlerWithMetaData} from "./index";
+import {createActionHandlerDecorator, type ActionHandlerWithMetaData} from "./CreateActionHandlerDecorator";
 
 /**
  * If specified, the action cannot be entered by other sagas during execution.
@@ -10,14 +10,11 @@ export function Mutex<ReturnType>() {
         if (lockTime) {
             thisModule.logger.info({
                 action: handler.actionName,
-                info: {
-                    payload: handler.maskedParams,
-                    mutex_locked_duration: (Date.now() - lockTime).toString(),
-                },
+                info: {payload: handler.maskedParams},
+                stats: {mutex_locked_duration: Date.now() - lockTime},
             });
         } else {
             try {
-                lockTime = Date.now();
                 return await handler();
             } finally {
                 lockTime = null;

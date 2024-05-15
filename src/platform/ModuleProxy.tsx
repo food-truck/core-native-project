@@ -2,17 +2,23 @@ import React from "react";
 import {AppState, type AppStateStatus, type NativeEventSubscription} from "react-native";
 import {type Task} from "redux-saga";
 import {app} from "../app";
-import {type ActionCreators, executeAction} from "../module";
+import { executeAction,type ErrorListener} from "../module";
 import {Module, type ModuleLifecycleListener} from "./Module";
-import {delay} from "../util/taskUtils";
+type FunctionKeys<T> = {
+    [K in keyof T]: T[K] extends Function ? K : never;
+}[keyof T];
+type Actions<M> = {
+    [K in Exclude<FunctionKeys<M>, keyof Module<any, any> | keyof ErrorListener>]: M[K];
+};
+
 
 export class ModuleProxy<M extends Module<any, any>> {
     constructor(
         private module: M,
-        private actions: ActionCreators<M>
+        private actions: Actions<M>
     ) {}
 
-    getActions(): ActionCreators<M> {
+    getActions(): Actions<M> {
         return this.actions;
     }
 

@@ -1,5 +1,5 @@
-import {createActionHandlerDecorator, type ActionHandlerWithMetaData} from "./index";
 import {setLoadingState} from "../storeActions";
+import {createActionHandlerDecorator, type ActionHandlerWithMetaData} from "./CreateActionHandlerDecorator";
 
 /**
  * To mark state.loading[identifier] during action execution.

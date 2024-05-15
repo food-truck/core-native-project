@@ -1,13 +1,13 @@
 import {app} from "../app";
 import {NetworkConnectionException} from "../Exception";
-import {delay} from "redux-saga/effects";
-import {createActionHandlerDecorator, type ActionHandlerWithMetaData} from "./index";
+import {delay} from "../util/taskUtils";
+import {createActionHandlerDecorator, type ActionHandlerWithMetaData} from "./CreateActionHandlerDecorator";
 
 /**
  * Re-execute the action if NetworkConnectionException is thrown.
  * A warning log will be also created, for each retry.
  */
-export function RetryOnNetworkConnectionError(retryIntervalSecond: number = 3) {
+export function RetryOnNetworkConnectionError<ReturnType>(retryIntervalSecond: number = 3) {
     return createActionHandlerDecorator(async function (handler: ActionHandlerWithMetaData<ReturnType>) {
         let retryTime = 0;
         async function callback() {
@@ -25,7 +25,7 @@ export function RetryOnNetworkConnectionError(retryIntervalSecond: number = 3) {
                         handler.actionName
                     );
                     await delay(retryIntervalSecond * 1000);
-                    callback();
+                    return callback();
                 } else {
                     throw e;
                 }

@@ -18,7 +18,7 @@ interface SetStatePayload<T = any> {
 }
 
 export const setAppState = <T extends object>(payload: SetStatePayload<T>, actionName?: string) => {
-    app.store.setState(
+    app.store.app.setState(
         draft => {
             draft.app[payload.moduleName] = payload.state;
         },
@@ -33,7 +33,7 @@ interface LoadingActionPayload {
 }
 
 export const setLoadingState = (payload: LoadingActionPayload) => {
-    app.store.setState(
+    app.store.loading.setState(
         draft => {
             const count = draft.loading[payload.identifier] || 0;
             draft.loading[payload.identifier] = count + (payload.show ? 1 : -1);

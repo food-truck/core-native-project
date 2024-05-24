@@ -2,8 +2,9 @@ import {app} from "../app";
 import {type Logger} from "../Logger";
 import {produce, enablePatches} from "immer";
 import {type TickIntervalDecoratorFlag} from "../module";
-import {type State} from "../sliceStores";
+import {type State, type StoreType} from "../sliceStores";
 import {setAppState} from "../storeActions";
+import {generateUniqueId} from "../util/generateUniqueId";
 
 if (process.env.NODE_ENV === "development") enablePatches();
 
@@ -22,6 +23,21 @@ export class Module<RootState extends State, ModuleName extends keyof RootState[
         readonly name: ModuleName,
         readonly initialState: RootState["app"][ModuleName]
     ) {}
+
+    async executeAsync<T>(asyncFn: (signal: AbortSignal) => Promise<T>, key?: string) {
+        const mapKey = key || generateUniqueId();
+        const controller = new AbortController();
+        if (!app.actionControllers[this.name]) {
+            app.actionControllers[this.name] = {};
+        }
+        app.actionControllers[this.name][mapKey] = controller;
+
+        try {
+            return await asyncFn(controller.signal);
+        } finally {
+            delete app.actionControllers[this.name][mapKey];
+        }
+    }
 
     onEnter(routeParameters: RouteParam) {
         /**
@@ -73,12 +89,22 @@ export class Module<RootState extends State, ModuleName extends keyof RootState[
          */
     }
 
-    get state(): Readonly<RootState["app"][ModuleName]> {
-        return this.rootState.app[this.name];
+    get abortControllerMap() {
+        return app.actionControllers[this.name];
     }
 
-    get rootState(): Readonly<RootState> {
-        return app.store.getState() as Readonly<RootState>;
+    get state(): Readonly<RootState["app"][ModuleName]> {
+        return app.getState("app")[this.name];
+    }
+
+    get rootState() {
+        return Object.entries(app.store).reduce((a, b) => {
+            const [key, val] = b as [keyof typeof app.store, StoreType];
+            return {
+                ...a,
+                key: val.getState(),
+            };
+        }, {} as State);
     }
 
     get logger(): Logger {
@@ -92,7 +118,6 @@ export class Module<RootState extends State, ModuleName extends keyof RootState[
             const originalState = this.state;
             const updater = stateOrUpdater as (state: RootState["app"][ModuleName]) => void;
             let patchDescriptions: string[] | undefined;
-            // TS cannot infer RootState["app"][ModuleName] as an object, so immer fails to unwrap the readonly type with Draft<T>
             const newState = produce<Readonly<RootState["app"][ModuleName]>, RootState["app"][ModuleName]>(
                 originalState,
                 draftState => {
@@ -118,7 +143,7 @@ export class Module<RootState extends State, ModuleName extends keyof RootState[
             }
         } else {
             const partialState = stateOrUpdater as object;
-            this.setState(state => Object.assign(state, partialState));
+            this.setState((state: object) => Object.assign(state, partialState));
         }
     }
 }

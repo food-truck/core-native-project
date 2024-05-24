@@ -2,7 +2,7 @@ import React from "react";
 import {AppState, type AppStateStatus, type NativeEventSubscription} from "react-native";
 import {type Task} from "redux-saga";
 import {app} from "../app";
-import { executeAction,type ErrorListener} from "../module";
+import {executeAction, type ErrorListener} from "../module";
 import {Module, type ModuleLifecycleListener} from "./Module";
 type FunctionKeys<T> = {
     [K in keyof T]: T[K] extends Function ? K : never;
@@ -10,7 +10,6 @@ type FunctionKeys<T> = {
 type Actions<M> = {
     [K in Exclude<FunctionKeys<M>, keyof Module<any, any> | keyof ErrorListener>]: M[K];
 };
-
 
 export class ModuleProxy<M extends Module<any, any>> {
     constructor(
@@ -24,6 +23,7 @@ export class ModuleProxy<M extends Module<any, any>> {
 
     attachLifecycle<P extends object>(ComponentType: React.ComponentType<P>): React.ComponentType<P> {
         const moduleName = this.module.name;
+        const executeAsync = this.module.executeAsync.bind(module);
         const lifecycleListener = this.module as ModuleLifecycleListener;
         const modulePrototype = Object.getPrototypeOf(lifecycleListener);
         const actions = this.actions as any;
@@ -33,7 +33,6 @@ export class ModuleProxy<M extends Module<any, any>> {
             // Copy static navigation options, important for navigator
             static navigationOptions = (ComponentType as any).navigationOptions;
 
-            private lifecycleSagaTask: Task | null = null;
             private unsubscribeFocus: (() => void) | undefined;
             private unsubscribeBlur: (() => void) | undefined;
             private unsubscribeAppStateChange: NativeEventSubscription | undefined;
@@ -47,34 +46,25 @@ export class ModuleProxy<M extends Module<any, any>> {
             }
 
             override componentDidMount() {
-                // this.lifecycleSagaTask = app.sagaMiddleware.run(this.lifecycleSaga.bind(this));
-
-                // According to the document, this API may change soon
-                // Ref: https://facebook.github.io/react-native/docs/appstate#addeventlistener
-                this.unsubscribeAppStateChange = AppState.addEventListener("change", this.onAppStateChange);
-
-                const props: any = this.props;
-                if ("navigation" in props && typeof props.navigation.addListener === "function") {
-                    if (this.hasOwnLifecycle("onFocus")) {
-                        this.unsubscribeFocus = props.navigation.addListener("focus", () => {
-                            // app.store.dispatch(actions.onFocus());
-                            actions.onFocus();
-                        });
-                    }
-                    if (this.hasOwnLifecycle("onBlur")) {
-                        this.unsubscribeBlur = props.navigation.addListener("blur", () => {
-                            // app.store.dispatch(actions.onBlur());
-                            actions.onBlur();
-                        });
-                    }
-                }
+                this.lifecycle.call(this);
             }
 
             override componentWillUnmount() {
                 if (this.hasOwnLifecycle("onDestroy")) {
-                    // app.store.dispatch(actions.onDestroy());
                     actions.onDestroy();
                 }
+
+                Object.entries(app.actionControllers).forEach(([actionModuleName, actionControllersMap]) => {
+                    if (actionModuleName === moduleName) {
+                        Object.values(actionControllersMap).forEach(control => control.abort());
+                    }
+                });
+
+                this.unsubscribeFocus?.();
+                this.unsubscribeBlur?.();
+                this.unsubscribeAppStateChange?.remove();
+                //clearTimer
+                clearInterval(this.timer);
 
                 app.logger.info({
                     action: `${moduleName}/@@DESTROY`,
@@ -83,16 +73,6 @@ export class ModuleProxy<M extends Module<any, any>> {
                         staying_second: ((Date.now() - this.mountedTime) / 1000).toFixed(2),
                     },
                 });
-
-                try {
-                    this.lifecycleSagaTask?.cancel();
-                } catch (e) {
-                    // In rare case, it may throw error, just ignore
-                }
-
-                this.unsubscribeFocus?.();
-                this.unsubscribeBlur?.();
-                this.unsubscribeAppStateChange?.remove();
             }
 
             onAppStateChange = (nextAppState: AppStateStatus) => {
@@ -119,16 +99,8 @@ export class ModuleProxy<M extends Module<any, any>> {
                 return Object.prototype.hasOwnProperty.call(modulePrototype, methodName);
             };
 
-            private async lifecycleSaga() {
-                /**
-                 * CAVEAT:
-                 * Do not use <yield* executeAction> for lifecycle actions.
-                 * It will lead to cancellation issue, which cannot stop the lifecycleSaga as expected.
-                 *
-                 * https://github.com/redux-saga/redux-saga/issues/1986
-                 */
+            private async lifecycle() {
                 const props: any = this.props;
-
                 const enterActionName = `${moduleName}/@@ENTER`;
                 const startTime = Date.now();
                 if ("navigation" in props) {
@@ -153,6 +125,21 @@ export class ModuleProxy<M extends Module<any, any>> {
                     },
                 });
 
+                this.unsubscribeAppStateChange = AppState.addEventListener("change", this.onAppStateChange);
+
+                if ("navigation" in props && typeof props.navigation.addListener === "function") {
+                    if (this.hasOwnLifecycle("onFocus")) {
+                        this.unsubscribeFocus = props.navigation.addListener("focus", () => {
+                            actions.onFocus();
+                        });
+                    }
+                    if (this.hasOwnLifecycle("onBlur")) {
+                        this.unsubscribeBlur = props.navigation.addListener("blur", () => {
+                            actions.onBlur();
+                        });
+                    }
+                }
+
                 if (this.hasOwnLifecycle("onTick")) {
                     const tickIntervalInMillisecond = (lifecycleListener.onTick.tickInterval || 5) * 1000;
                     const boundTicker = lifecycleListener.onTick.bind(lifecycleListener);
@@ -171,18 +158,6 @@ export class ModuleProxy<M extends Module<any, any>> {
                     tickExecute();
                     clearInterval(this.timer);
                     this.timer = setInterval(tickExecute, tickIntervalInMillisecond);
-                    // while (true) {
-                    //     if (this.state.appState === "active") {
-                    //         // yield rawCall(executeAction, tickActionName, boundTicker);
-                    //         executeAction({
-                    //             actionName: tickActionName,
-                    //             handler: boundTicker,
-                    //             payload: [],
-                    //         });
-                    //     }
-                    //     this.tickCount++;
-                    //     await delay(tickIntervalInMillisecond);
-                    // }
                 }
             }
         };

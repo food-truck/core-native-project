@@ -2,14 +2,13 @@ import {LoggerImpl, type LoggerConfig, type Logger} from "./Logger";
 import {type ErrorHandler} from "./module";
 import {store, type State} from "./sliceStores";
 
-declare const window: any;
-
 interface App {
     readonly store: typeof store;
     readonly logger: LoggerImpl;
     loggerConfig: LoggerConfig | null;
     errorHandler: ErrorHandler;
     getState: <K extends keyof State>(key: K) => State[K];
+    actionControllers: Record<string, Record<string, AbortController>>;
 }
 
 export const app = createApp();
@@ -24,5 +23,6 @@ function createApp(): App {
         logger: eventLogger,
         loggerConfig: null,
         *errorHandler() {},
+        actionControllers: {},
     };
 }

@@ -1,7 +1,6 @@
 import {create, type StateCreator, type StoreMutatorIdentifier} from "zustand";
 import {immer} from "zustand/middleware/immer";
 import {devtools, subscribeWithSelector} from "zustand/middleware";
-import * as process from "node:process";
 
 export type ImmerStateCreator<T, Mps extends [StoreMutatorIdentifier, unknown][] = [], Mcs extends [StoreMutatorIdentifier, unknown][] = []> = StateCreator<T, [...Mps, ["zustand/immer", never]], Mcs>;
 export interface Slice {}

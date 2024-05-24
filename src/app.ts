@@ -15,14 +15,12 @@ export const app = createApp();
 export const logger: Logger = app.logger;
 
 function createApp(): App {
-    const eventLogger = new LoggerImpl();
-
     return {
         getState: <K extends keyof State>(key: keyof typeof store) => store[key].getState() as State[K],
         store,
-        logger: eventLogger,
+        logger: new LoggerImpl(),
         loggerConfig: null,
-        *errorHandler() {},
+        errorHandler() {},
         actionControllers: {},
     };
 }

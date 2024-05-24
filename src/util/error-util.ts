@@ -1,7 +1,6 @@
 import {Exception, JavaScriptException} from "../Exception";
 import {type ErrorHandler} from "../module";
 import {app} from "../app";
-import {spawn} from "../typed-saga";
 import {sendEventLogs} from "../platform/bootstrap";
 
 let errorHandlerRunning = false;
@@ -48,19 +47,19 @@ export function captureError(error: unknown, action: string, extra: ErrorExtra =
     };
 
     app.logger.exception(exception, info, action);
-    app.sagaMiddleware.run(runUserErrorHandler, app.errorHandler, exception);
+    runUserErrorHandler.call(null, app.errorHandler, exception);
 
     return exception;
 }
 
-export function* runUserErrorHandler(handler: ErrorHandler, exception: Exception) {
+export async function runUserErrorHandler(handler: ErrorHandler, exception: Exception) {
     // For app, report errors to event server ASAP, in case of sudden termination
-    yield spawn(sendEventLogs);
+    sendEventLogs();
     if (errorHandlerRunning) return;
 
     try {
         errorHandlerRunning = true;
-        yield* handler(exception);
+        handler(exception);
     } catch (e) {
         console.warn("[framework] Fail to execute error handler", e);
     } finally {

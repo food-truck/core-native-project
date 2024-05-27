@@ -15,4 +15,5 @@ export {logger} from "./app";
 
 export {useStore} from "zustand";
 export * from "./sliceStores";
+export * from "./storeActions";
 export {produce} from "immer";

@@ -1,4 +1,4 @@
-export {Interval} from './Interval';
+export {Interval} from "./Interval";
 export {createActionHandlerDecorator} from "./CreateActionHandlerDecorator";
 export {Loading} from "./Loading";
 export {Log} from "./Log";

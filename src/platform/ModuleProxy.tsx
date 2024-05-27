@@ -1,6 +1,5 @@
 import React from "react";
 import {AppState, type AppStateStatus, type NativeEventSubscription} from "react-native";
-import {type Task} from "redux-saga";
 import {app} from "../app";
 import {executeAction, type ErrorListener} from "../module";
 import {Module, type ModuleLifecycleListener} from "./Module";

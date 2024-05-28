@@ -16,6 +16,11 @@
         "prepublishOnly": "node script/build.js --mode fast",
         "deploy": "node script/publish.js"
     },
+    "source": "src/index",
+    "files": [
+        "src",
+        "lib"
+    ],
     "devDependencies": {
         "@types/jest": "29.5.11",
         "@types/node": "20.10.4",

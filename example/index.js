@@ -11,8 +11,6 @@ function bootstrap() {
         componentType: App,
         errorListener: new ErrorHandler(),
         beforeRendering: async () => {
-            console.log("before render123");
-            
         },
         
     });

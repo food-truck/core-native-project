@@ -38,7 +38,6 @@ export function register<M extends Module<any, any>>(module: M): ModuleProxy<M> 
         method.actionName = qualifiedActionType;
         actions[actionType] = method.bind(module);
     });
-
     return new ModuleProxy(module, actions);
 }
 

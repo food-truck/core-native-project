@@ -22,11 +22,10 @@ export class ModuleProxy<M extends Module<any, any>> {
 
     attachLifecycle<P extends object>(ComponentType: React.ComponentType<P>): React.ComponentType<P> {
         const moduleName = this.module.name;
-        const executeAsync = this.module.executeAsync.bind(module);
+        this.module.executeAsync.bind(module);
         const lifecycleListener = this.module as ModuleLifecycleListener;
         const modulePrototype = Object.getPrototypeOf(lifecycleListener);
         const actions = this.actions as any;
-
         return class extends React.PureComponent<P, {appState: AppStateStatus}> {
             static displayName = `ModuleBoundary(${moduleName})`;
             // Copy static navigation options, important for navigator
@@ -106,7 +105,7 @@ export class ModuleProxy<M extends Module<any, any>> {
                     executeAction({
                         actionName: enterActionName,
                         handler: lifecycleListener.onEnter.bind(lifecycleListener),
-                        payload: props.route?.params || {},
+                        payload: [props.route?.params || {}],
                     });
                 } else {
                     executeAction({
@@ -140,24 +139,26 @@ export class ModuleProxy<M extends Module<any, any>> {
                 }
 
                 if (this.hasOwnLifecycle("onTick")) {
-                    const tickIntervalInMillisecond = (lifecycleListener.onTick.tickInterval || 5) * 1000;
-                    const boundTicker = lifecycleListener.onTick.bind(lifecycleListener);
-                    const tickActionName = `${moduleName}/@@TICK`;
-                    const tickExecute = async () => {
-                        if (this.state.appState === "active") {
-                            // yield rawCall(executeAction, tickActionName, boundTicker);
-                            executeAction({
-                                actionName: tickActionName,
-                                handler: boundTicker,
-                                payload: [],
-                            });
-                        }
-                        this.tickCount++;
-                    };
-                    tickExecute();
-                    clearInterval(this.timer);
-                    this.timer = setInterval(tickExecute, tickIntervalInMillisecond);
+                    this.onTickTask.call(this);
                 }
+            }
+            private async onTickTask() {
+                const tickIntervalInMillisecond = (lifecycleListener.onTick.tickInterval || 5) * 1000;
+                const boundTicker = lifecycleListener.onTick.bind(lifecycleListener);
+                const tickActionName = `${moduleName}/@@TICK`;
+                const tickExecute = async () => {
+                    if (this.state.appState === "active") {
+                        executeAction({
+                            actionName: tickActionName,
+                            handler: boundTicker,
+                            payload: [],
+                        });
+                    }
+                    this.tickCount++;
+                };
+                tickExecute();
+                clearInterval(this.timer);
+                this.timer = setInterval(tickExecute, tickIntervalInMillisecond);
             }
         };
     }

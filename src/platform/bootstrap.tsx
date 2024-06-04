@@ -5,11 +5,10 @@ import {type LoggerConfig} from "../Logger";
 import {type ErrorListener} from "../module";
 import {ErrorBoundary} from "../util/ErrorBoundary";
 import {ajax} from "../util/network";
-import {APIException} from "../Exception";
 import {captureError} from "../util/error-util";
 import {PersistInstanceImpl} from "../util/LogPersistUtil";
-import {delay} from "../util/taskUtils";
 import {createZustandContext, Provider} from "../ZustandProvider";
+import {APIException, delay} from "@wonder/core-core";
 
 interface BootstrapOption {
     registeredAppName: string;

@@ -10,8 +10,10 @@
         "test": "jest"
     },
     "dependencies": {
+        "@babel/plugin-transform-private-methods": "^7.24.6",
         "@react-navigation/native": "^6.1.17",
         "@react-navigation/native-stack": "^6.9.26",
+        "@wonder/core-core": "^0.0.10",
         "@wonder/core-native": "file:../src",
         "immer": "10.0.3",
         "react": "18.2.0",

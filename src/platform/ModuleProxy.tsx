@@ -1,12 +1,9 @@
 import React from "react";
 import {AppState, type AppStateStatus, type NativeEventSubscription} from "react-native";
 import {app} from "../app";
-import {executeAction, type ErrorListener} from "../module";
+import {executeAction} from "../module";
 import {Module, type ModuleLifecycleListener} from "./Module";
 import {CoreModuleProxy} from "@wonder/core-core";
-type FunctionKeys<T> = {
-    [K in keyof T]: T[K] extends Function ? K : never;
-}[keyof T];
 
 export class ModuleProxy<M extends Module<any, any>> extends CoreModuleProxy<M> {
     attachLifecycle<P extends object>(ComponentType: React.ComponentType<P>): React.ComponentType<P> {

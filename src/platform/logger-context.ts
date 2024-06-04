@@ -6,7 +6,7 @@
  * A new session ID is generated for next use.
  */
 
-import {generateUniqueId} from "../util/generateUniqueId";
+import {generateUniqueId} from "@wonder/core-core";
 
 export const loggerContext = {
     session_id: generateUniqueId(),

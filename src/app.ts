@@ -1,6 +1,7 @@
-import {LoggerImpl, type LoggerConfig, type Logger, coreApp} from "@wonder/core-core";
+import {coreApp} from "@wonder/core-core";
 import {type ErrorHandler} from "./module";
 import {store, type State} from "./sliceStores";
+import {LoggerImpl, type Logger, type LoggerConfig} from "./Logger";
 
 interface App {
     readonly store: typeof store & typeof coreApp.store;

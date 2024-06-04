@@ -596,7 +596,7 @@
   dependencies:
     "@babel/helper-plugin-utils" "^7.24.6"
 
-"@babel/plugin-transform-private-methods@^7.22.5":
+"@babel/plugin-transform-private-methods@^7.22.5", "@babel/plugin-transform-private-methods@^7.24.6":
   version "7.24.6"
   resolved "https://registry.yarnpkg.com/@babel/plugin-transform-private-methods/-/plugin-transform-private-methods-7.24.6.tgz#258e1f859a52ff7b30ad556598224c192defcda7"
   integrity sha512-T9LtDI0BgwXOzyXrvgLTT8DFjCC/XgWLjflczTLXyvxbnSR/gpv0hbmzlHE/kmh9nOvlygbamLKRo6Op4yB6aw==
@@ -1959,6 +1959,13 @@
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@ungap/structured-clone/-/structured-clone-1.2.0.tgz#756641adb587851b5ccb3e095daf27ae581c8406"
   integrity sha512-zuVdFrMJiuCDQUMCzQaD6KL28MjnqqN8XnAqiEq9PNm/hCPTSGfrXCOfwj1ow4LFb/tNymJPwsNbVePc1xFqrQ==
+
+"@wonder/core-core@^0.0.10":
+  version "0.0.10"
+  resolved "https://pkgs.dev.azure.com/foodtruckinc/Wonder/_packaging/npm-local/npm/registry/@wonder/core-core/-/core-core-0.0.10.tgz#b8236fcbc6a95179576012642f489a0d75c0390e"
+  integrity sha1-uCNvy8apUXlXYBJkL0iaDXXAOQ4=
+  dependencies:
+    uuid "9.0.1"
 
 "@wonder/core-native@file:../src":
   version "0.0.0"

@@ -1,5 +1,5 @@
 import {app} from "../app";
-import {stringifyWithMask} from "../util/json-util";
+import {stringifyWithMask} from "@wonder/core-core";
 import type {State} from "../sliceStores";
 import type {ActionHandler} from "../module";
 /**

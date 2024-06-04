@@ -5,3 +5,4 @@ export {Log} from "./Log";
 export {Mutex} from "./Mutex";
 export {RetryOnNetworkConnectionError} from "./RetryOnNetworkConnectionError";
 export {SilentOnNetworkConnectionError} from "./SilentOnNetworkConnectionError";
+export {Subscribe} from "./Subscribe";

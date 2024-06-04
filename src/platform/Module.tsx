@@ -1,10 +1,8 @@
 import {app} from "../app";
-import {type Logger} from "../Logger";
-import {produce, enablePatches} from "immer";
+import {type Logger, CoreModule, generateUniqueId} from "@wonder/core-core";
+import {enablePatches} from "immer";
 import {type TickIntervalDecoratorFlag} from "../module";
-import {type State, type StoreType} from "../sliceStores";
-import {setAppState} from "../storeActions";
-import {generateUniqueId} from "../util/generateUniqueId";
+import {type State} from "../sliceStores";
 
 if (process.env.NODE_ENV === "development") enablePatches();
 
@@ -18,12 +16,10 @@ export interface ModuleLifecycleListener<RouteParam extends object = object> {
     onBlur: () => void;
 }
 
-export class Module<RootState extends State, ModuleName extends keyof RootState["app"] & string, RouteParam extends object = object> implements ModuleLifecycleListener<RouteParam> {
-    constructor(
-        readonly name: ModuleName,
-        readonly initialState: RootState["app"][ModuleName]
-    ) {}
-
+export class Module<RootState extends State, ModuleName extends keyof RootState["app"] & string, RouteParam extends object = object>
+    extends CoreModule<RootState, ModuleName>
+    implements ModuleLifecycleListener<RouteParam>
+{
     async executeAsync<T>(asyncFn: (signal: AbortSignal) => Promise<T>, key?: string) {
         const mapKey = key || generateUniqueId();
         const controller = new AbortController();
@@ -39,17 +35,11 @@ export class Module<RootState extends State, ModuleName extends keyof RootState[
         }
     }
 
-    onEnter(routeParameters: RouteParam) {
+    override onEnter(routeParameters: RouteParam) {
         /**
          * Called when the attached component is mounted.
          * The routeParameters is auto specified if the component is connected to React Navigator.
          * Otherwise, routeParameters will be {}.
-         */
-    }
-
-    onDestroy() {
-        /**
-         * Called when the attached component is going to unmount.
          */
     }
 
@@ -93,57 +83,7 @@ export class Module<RootState extends State, ModuleName extends keyof RootState[
         return app.actionControllers[this.name];
     }
 
-    get state(): Readonly<RootState["app"][ModuleName]> {
-        return app.getState("app")[this.name];
-    }
-
-    get rootState() {
-        return Object.entries(app.store).reduce((a, b) => {
-            const [key, val] = b as [keyof typeof app.store, StoreType];
-            return {
-                ...a,
-                key: val.getState(),
-            };
-        }, {} as State);
-    }
-
     get logger(): Logger {
         return app.logger;
-    }
-
-    setState<K extends keyof RootState["app"][ModuleName]>(
-        stateOrUpdater: ((state: RootState["app"][ModuleName]) => void) | Pick<RootState["app"][ModuleName], K> | RootState["app"][ModuleName]
-    ): void {
-        if (typeof stateOrUpdater === "function") {
-            const originalState = this.state;
-            const updater = stateOrUpdater as (state: RootState["app"][ModuleName]) => void;
-            let patchDescriptions: string[] | undefined;
-            const newState = produce<Readonly<RootState["app"][ModuleName]>, RootState["app"][ModuleName]>(
-                originalState,
-                draftState => {
-                    // Wrap into a void function, in case updater() might return anything
-                    updater(draftState);
-                },
-                process.env.NODE_ENV === "development"
-                    ? patches => {
-                          // No need to read "op", in will only be "replace"
-                          patchDescriptions = patches.map(_ => _.path.join("."));
-                      }
-                    : undefined
-            );
-            if (newState !== originalState) {
-                const description = `@@${this.name}/setState${patchDescriptions ? `[${patchDescriptions.join("/")}]` : ``}`;
-                setAppState(
-                    {
-                        moduleName: this.name,
-                        state: newState,
-                    },
-                    description
-                );
-            }
-        } else {
-            const partialState = stateOrUpdater as object;
-            this.setState((state: object) => Object.assign(state, partialState));
-        }
     }
 }

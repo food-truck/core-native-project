@@ -1,6 +1,5 @@
 import {app} from "../app";
-import {NetworkConnectionException} from "../Exception";
-import {delay} from "../util/taskUtils";
+import {NetworkConnectionException, delay} from "@wonder/core-core";
 import {createActionHandlerDecorator, type ActionHandlerWithMetaData} from "./CreateActionHandlerDecorator";
 
 /**

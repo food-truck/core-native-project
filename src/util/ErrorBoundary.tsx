@@ -1,5 +1,5 @@
 import React from "react";
-import {Exception} from "../Exception";
+import {Exception} from "@wonder/core-core";
 import {captureError} from "./error-util";
 
 interface Props {

@@ -11,8 +11,7 @@
  * https://stackoverflow.com/questions/37897523/axios-get-access-to-response-header-fields
  */
 
-import {APIException, NetworkConnectionException} from "../Exception";
-import {parseWithDate} from "./json-util";
+import {APIException, NetworkConnectionException, parseWithDate} from "@wonder/core-core";
 
 export type PathParams<T extends string> = string extends T
     ? {[key: string]: string | number}

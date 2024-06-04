@@ -1,4 +1,4 @@
-import {Exception, JavaScriptException} from "../Exception";
+import {Exception, JavaScriptException} from "@wonder/core-core";
 import {type ErrorHandler} from "../module";
 import {app} from "../app";
 import {sendEventLogs} from "../platform/bootstrap";

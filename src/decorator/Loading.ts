@@ -1,4 +1,4 @@
-import {setLoadingState} from "../storeActions";
+import {setLoadingState} from "@wonder/core-core";
 import {createActionHandlerDecorator, type ActionHandlerWithMetaData} from "./CreateActionHandlerDecorator";
 
 /**

@@ -3,26 +3,15 @@ import {AppState, type AppStateStatus, type NativeEventSubscription} from "react
 import {app} from "../app";
 import {executeAction, type ErrorListener} from "../module";
 import {Module, type ModuleLifecycleListener} from "./Module";
+import {CoreModuleProxy} from "@wonder/core-core";
 type FunctionKeys<T> = {
     [K in keyof T]: T[K] extends Function ? K : never;
 }[keyof T];
-type Actions<M> = {
-    [K in Exclude<FunctionKeys<M>, keyof Module<any, any> | keyof ErrorListener>]: M[K];
-};
 
-export class ModuleProxy<M extends Module<any, any>> {
-    constructor(
-        private module: M,
-        private actions: Actions<M>
-    ) {}
-
-    getActions(): Actions<M> {
-        return this.actions;
-    }
-
+export class ModuleProxy<M extends Module<any, any>> extends CoreModuleProxy<M> {
     attachLifecycle<P extends object>(ComponentType: React.ComponentType<P>): React.ComponentType<P> {
-        const moduleName = this.module.name;
-        this.module.executeAsync.bind(module);
+        const moduleName = this.module.name as string;
+        const module = this.module;
         const lifecycleListener = this.module as ModuleLifecycleListener;
         const modulePrototype = Object.getPrototypeOf(lifecycleListener);
         const actions = this.actions as any;
@@ -51,7 +40,6 @@ export class ModuleProxy<M extends Module<any, any>> {
                 if (this.hasOwnLifecycle("onDestroy")) {
                     actions.onDestroy();
                 }
-
                 Object.entries(app.actionControllers).forEach(([actionModuleName, actionControllersMap]) => {
                     if (actionModuleName === moduleName) {
                         Object.values(actionControllersMap).forEach(control => control.abort());
@@ -101,6 +89,7 @@ export class ModuleProxy<M extends Module<any, any>> {
                 const props: any = this.props;
                 const enterActionName = `${moduleName}/@@ENTER`;
                 const startTime = Date.now();
+
                 if ("navigation" in props) {
                     executeAction({
                         actionName: enterActionName,
@@ -148,13 +137,13 @@ export class ModuleProxy<M extends Module<any, any>> {
                 const tickActionName = `${moduleName}/@@TICK`;
                 const tickExecute = async () => {
                     if (this.state.appState === "active") {
-                        executeAction({
+                        await executeAction({
                             actionName: tickActionName,
                             handler: boundTicker,
                             payload: [],
                         });
+                        this.tickCount++;
                     }
-                    this.tickCount++;
                 };
                 tickExecute();
                 clearInterval(this.timer);

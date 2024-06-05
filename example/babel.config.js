@@ -8,7 +8,7 @@ module.exports = {
                 allowDeclareFields: true,
             }
         ],
-        ["@babel/plugin-proposal-decorators", {"legacy":true}],
+        [["@babel/plugin-proposal-decorators", {loose: true, version: "2022-03"}]],
         ["@babel/plugin-transform-private-methods", {"loose":true}],
         ["@babel/plugin-proposal-class-properties", {"loose":true}]  
     ],

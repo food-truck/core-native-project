@@ -10,6 +10,7 @@
         "test": "jest"
     },
     "dependencies": {
+        "@babel/plugin-transform-class-static-block": "^7.24.6",
         "@babel/plugin-transform-private-methods": "^7.24.6",
         "@react-navigation/native": "^6.1.17",
         "@react-navigation/native-stack": "^6.9.26",

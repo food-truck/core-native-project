@@ -1,4 +1,5 @@
-import {Module, NetworkConnectionException, register} from '@wonder/core-native';
+import {Interval, Loading, APIException, register} from '@wonder/core-native';
+import {Module} from '@wonder/core-native';
 import {RootState} from '../../type';
 import {HomeScreen} from './component/Home';
 const initState = {};
@@ -7,7 +8,7 @@ const getList = () =>
     new Promise(res =>
         setTimeout(() => {
             res('success');
-        }, 1000),
+        }, 3000),
     );
 
 class HomeModule extends Module<RootState, 'home'> {
@@ -19,16 +20,15 @@ class HomeModule extends Module<RootState, 'home'> {
         // console.log('home onFocus');
     }
 
-    // @Interval(1);
-    override async onTick() {
-        // console.log('home onTick');
-    }
+    @Interval(1)
+    override async onTick() {}
 
+    @Loading('getHomeData')
     async getHomeData(value: string) {
         try {
             await this.executeAsync(getList, 'getHomeData');
             if (value === 'error') {
-                throw new NetworkConnectionException('network error', '');
+                throw new APIException('network error', 401, '', {}, 'idid', 'error');
             }
             return true;
         } catch (error) {

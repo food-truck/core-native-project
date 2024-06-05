@@ -7,7 +7,7 @@ import {NavigationProp, useNavigation} from '@react-navigation/native';
 
 export const HomeScreen = () => {
     const {} = useModuleState('home');
-    const loading = useLoadingStatus('getTodoList');
+    const loading = useLoadingStatus('getHomeData');
     const navigation = useNavigation<
         NavigationProp<{
             List: undefined;
@@ -22,7 +22,7 @@ export const HomeScreen = () => {
                 onPress={() => {
                     navigation.navigate('List');
                 }}>
-                Home Screen 12
+                {loading ? 'Loading...' : 'Home Screen'}
             </Text>
         </View>
     );

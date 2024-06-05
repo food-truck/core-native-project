@@ -1,6 +1,5 @@
 import {Button, Text, View} from 'react-native';
 import {useModuleState} from '../../../useModuleState';
-import {useEffect} from 'react';
 import {useLoadingStatus} from '@wonder/core-native';
 import {listActions} from '..';
 
@@ -13,8 +12,6 @@ export const ListScreen = () => {
     const fetchData2 = async () => {
         await listActions.getList2();
     };
-
-    useEffect(() => {}, []);
 
     return (
         <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>

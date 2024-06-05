@@ -33,6 +33,6 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     // Causes issues with package.json "exports"
-    "forceConsistentCasingInFileNames": false
+    "forceConsistentCasingInFileNames": false,
   },
 }

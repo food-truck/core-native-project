@@ -1,4 +1,4 @@
-import type {Log} from "../Logger";
+import type {Log} from "@wonder/core-core";
 import {CustomMMKV} from "./mmkv";
 
 export interface PersistInstance {

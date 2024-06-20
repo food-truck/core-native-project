@@ -13,6 +13,7 @@ const getList = () =>
 
 class HomeModule extends Module<RootState, 'home'> {
     override async onEnter(routeParameters: object) {
+        super.onEnter(routeParameters);
         // console.log('home onEnter');
     }
 

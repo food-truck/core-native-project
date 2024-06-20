@@ -12,6 +12,8 @@ export {
     NetworkConnectionException,
     JavaScriptException,
     errorToException,
+    createActionHandlerDecorator,
+    type ActionHandlerWithMetaData,
 } from "@wonder/core-core";
 export {startApp, sendEventLogs} from "./platform/bootstrap";
 export {Module} from "./platform/Module";

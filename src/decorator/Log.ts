@@ -1,4 +1,4 @@
-import {createActionHandlerDecorator, type ActionHandlerWithMetaData} from "./CreateActionHandlerDecorator";
+import {createActionHandlerDecorator, type ActionHandlerWithMetaData} from "@wonder/core-core";
 
 /**
  * To add a log item for action, with execution duration, action name, and masked action parameters.

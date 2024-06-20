@@ -10,9 +10,7 @@ startApp({
     componentType: App,
     errorListener: new ErrorHandler(),
     beforeRendering: async () => {
-        await setTimeout(() => {
-            
-        }, 2000);
+       
     },
     
 })

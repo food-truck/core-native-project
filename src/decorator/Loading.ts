@@ -1,21 +1,26 @@
-import {setLoadingState} from "@wonder/core-core";
-import {createActionHandlerDecorator, type ActionHandlerWithMetaData} from "./CreateActionHandlerDecorator";
+import {setLoadingState, createActionHandlerDecorator, type ActionHandlerWithMetaData} from "@wonder/core-core";
 
 /**
  * To mark state.loading[identifier] during action execution.
  */
-export function Loading<ReturnType>(identifier: string = "global") {
+export function Loading<ReturnType>(identifier: string = "global", initialLoading?: boolean) {
+    if (initialLoading) {
+        setLoadingState({
+            identifier,
+            show: 1,
+        });
+    }
     return createActionHandlerDecorator(async function (handler: ActionHandlerWithMetaData<ReturnType>) {
         setLoadingState({
             identifier,
-            show: true,
+            show: 1,
         });
         try {
             return await handler();
         } finally {
             setLoadingState({
                 identifier,
-                show: false,
+                show: initialLoading ? -2 : -1,
             });
         }
     });

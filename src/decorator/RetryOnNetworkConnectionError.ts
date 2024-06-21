@@ -1,6 +1,5 @@
 import {app} from "../app";
-import {NetworkConnectionException, delay} from "@wonder/core-core";
-import {createActionHandlerDecorator, type ActionHandlerWithMetaData} from "./CreateActionHandlerDecorator";
+import {NetworkConnectionException, delay, createActionHandlerDecorator, type ActionHandlerWithMetaData} from "@wonder/core-core";
 
 /**
  * Re-execute the action if NetworkConnectionException is thrown.

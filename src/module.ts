@@ -1,5 +1,4 @@
-import {Exception, stringifyWithMask, coreRegister} from "@wonder/core-core";
-import {app} from "./app";
+import {Exception, coreRegister, executeActionGenerator} from "@wonder/core-core";
 import {ModuleProxy} from "./platform/ModuleProxy";
 import {captureError} from "./util/error-util";
 
@@ -15,12 +14,5 @@ export interface ErrorListener {
 
 export type ActionHandler<ReturnType> = (...args: any[]) => Promise<ReturnType>;
 
-export const register = coreRegister(ModuleProxy<any>);
-export const executeAction = async ({actionName, handler, payload}: {actionName: string; handler: Function; payload: any[]}) => {
-    try {
-        await handler(...payload);
-    } catch (error) {
-        const actionPayload = stringifyWithMask(app.loggerConfig?.maskedKeywords || [], "***", ...payload) || "[No Parameter]";
-        captureError(error, actionName, {actionPayload});
-    }
-};
+export const executeAction = executeActionGenerator(captureError);
+export const register = coreRegister(ModuleProxy<any>, executeAction);

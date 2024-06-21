@@ -5,19 +5,19 @@ import {HomeScreen} from './component/Home';
 const initState = {};
 
 const getList = () =>
-    new Promise(res =>
+    new Promise((resolve, reject) =>
         setTimeout(() => {
-            res('success');
+            resolve('success');
         }, 3000),
     );
 
 class HomeModule extends Module<RootState, 'home'> {
     override async onEnter(routeParameters: object) {
-        super.onEnter(routeParameters);
         // console.log('home onEnter');
+        // await this.getHomeData('hello');
     }
 
-    onFocus(): void {
+    async onFocus() {
         // console.log('home onFocus');
     }
 
@@ -27,7 +27,10 @@ class HomeModule extends Module<RootState, 'home'> {
     @Loading('getHomeData')
     async getHomeData(value: string) {
         try {
-            await this.executeAsync(getList, 'getHomeData');
+            console.log('getHomeData === ', new Date());
+            const a = await this.executeAsync(getList, 'getHomeData');
+            console.log('a ==== ', a);
+            console.log('getHomeData1 === ', new Date());
             if (value === 'error') {
                 throw new APIException('network error', 401, '', {}, 'idid', 'error');
             }

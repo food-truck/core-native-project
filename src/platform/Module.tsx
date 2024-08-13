@@ -20,6 +20,8 @@ export class Module<RootState extends State, ModuleName extends keyof RootState[
     extends CoreModule<RootState, ModuleName>
     implements ModuleLifecycleListener<RouteParam>
 {
+    moduleStatus: "active" | "inactive" = "inactive";
+
     async executeAsync<T>(asyncFn: (signal: AbortSignal) => Promise<T>, key?: string) {
         const mapKey = key || generateUniqueId();
         const controller = new AbortController();

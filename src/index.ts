@@ -21,7 +21,6 @@ export {async} from "./util/async";
 export {captureError} from "./util/error-util";
 export {ajax, uri, setResponseHeaderInterceptor, setRequestHeaderInterceptor} from "./util/network";
 export {ErrorBoundary} from "./util/ErrorBoundary";
-export {type State} from "./sliceStores";
 export * from "./decorator";
 export {register, type ErrorListener} from "./module";
 export {useLoadingStatus, useSelector} from "./hooks";

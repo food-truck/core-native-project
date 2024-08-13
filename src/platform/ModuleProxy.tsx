@@ -3,15 +3,18 @@ import {AppState, type AppStateStatus, type NativeEventSubscription} from "react
 import {app} from "../app";
 import {executeAction} from "../module";
 import {Module, type ModuleLifecycleListener} from "./Module";
-import {CoreModuleProxy} from "@wonder/core-core";
+import {CoreModuleProxy, eventBus} from "@wonder/core-core";
+import {getListenActionName} from "../decorator/Subscribe";
 
 export class ModuleProxy<M extends Module<any, any>> extends CoreModuleProxy<M> {
     attachLifecycle<P extends object>(ComponentType: React.ComponentType<P>): React.ComponentType<P> {
         const moduleName = this.module.name as string;
-        const module = this.module;
+        const thisModule = this.module;
         const lifecycleListener = this.module as ModuleLifecycleListener;
         const modulePrototype = Object.getPrototypeOf(lifecycleListener);
         const actions = this.actions as any;
+        const listenActionName = getListenActionName(moduleName);
+
         return class extends React.PureComponent<P, {appState: AppStateStatus}> {
             static displayName = `ModuleBoundary(${moduleName})`;
             // Copy static navigation options, important for navigator
@@ -30,10 +33,18 @@ export class ModuleProxy<M extends Module<any, any>> extends CoreModuleProxy<M> 
             }
 
             override componentDidMount() {
+                thisModule.moduleStatus = "active";
+                eventBus.emit(listenActionName, {
+                    detail: {
+                        moduleName,
+                    },
+                });
                 this.lifecycle.call(this);
             }
 
             override componentWillUnmount() {
+                thisModule.moduleStatus = "inactive";
+
                 if (this.hasOwnLifecycle("onDestroy")) {
                     actions.onDestroy();
                 }

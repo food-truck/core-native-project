@@ -1,8 +1,10 @@
 import {app} from "../app";
 import type {Module} from "../platform/Module";
 import {shallow} from "zustand/shallow";
-import type {store} from "../sliceStores";
-import type {StoreType} from "@wonder/core-core";
+import type {StoreType} from "../sliceStores";
+import {eventBus} from "@wonder/core-core";
+
+export const getListenActionName = (moduleName: string) => `ENTER_MODULE_${moduleName}`;
 
 /**
  * Subscribe decorator for subscribing to changes in the application state. When the decorated method is called, the subscription is unsubscribed.
@@ -11,21 +13,35 @@ import type {StoreType} from "@wonder/core-core";
  * @param selector selector: state => state.app.xxx  or state => [state.app.xxx, state.app.yyy]
  *
  */
-export function Subscribe<S extends object, T, M extends Module<any, any>, K extends keyof typeof store>(selector: (state: S) => any, storeName: K = "app" as K) {
+export function Subscribe<S extends object, T, M extends Module<any, any>, K extends keyof typeof app.store>(
+    selector: (state: S) => any,
+    storeName: K = "app" as K,
+    equalityFn?: (a: any, b: any) => boolean
+) {
     let unsubscribe: () => void;
-    return (originMethod: any, _context: ClassMethodDecoratorContext<M, (value: T, prevValue: T) => void>) => {
+    return (originMethod: any, _context: ClassMethodDecoratorContext<M, (value: T, prevValue: T) => Promise<void>>) => {
         _context.addInitializer(function () {
-            unsubscribe = (app.store[storeName] as StoreType).subscribe(
-                selector as (state: object) => any,
-                (value, prevValue) => {
-                    originMethod.call(this, value, prevValue);
-                },
-                {equalityFn: shallow}
-            );
+            eventBus.once(getListenActionName(this.name), () => {
+                unsubscribe = (app.store[storeName] as StoreType).subscribe(
+                    selector as (state: object) => any,
+                    (value, prevValue) => {
+                        if (this.moduleStatus === "inactive") {
+                            return;
+                        }
+                        originMethod.call(this, value, prevValue);
+                    },
+                    {equalityFn: equalityFn ?? shallow}
+                );
+            });
         });
 
-        return () => {
+        const newFunction = () => {
             unsubscribe();
         };
+
+        Reflect.defineProperty(newFunction, "name", {
+            value: _context.name,
+        });
+        return newFunction as any;
     };
 }
